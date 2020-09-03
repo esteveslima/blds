@@ -105,7 +105,7 @@ export default class Home extends Component {
             loadingRegister: true
         })   
         try{
-            const responseRegistration = await fetch(`${backendURL}/comment/create`, {
+            const responseRegistration = await fetch(`${backendURL}/travel/create`, {
                 method: "POST",
                 headers: {
                     'Authorization' : `Bearer ${this.#authToken}`,
@@ -113,11 +113,11 @@ export default class Home extends Component {
                 },
                 body: JSON.stringify({
                     userId: this.state.user.id,  
-                    text: this.state.fieldRegisterComment
+                    text: this.state.fieldRegisterTravel
                 }),
             })
             if(responseRegistration.status !== 200){
-                message.error('Falha na requisição registerComment');
+                message.error('Falha na requisição registerTravel');
                 this.setState({
                     loadingRegister: false
                 })
@@ -126,26 +126,26 @@ export default class Home extends Component {
 
             const resultRegistration = await responseRegistration.json()     
             
-            const updatedComments = [...this.state.user.comments, resultRegistration.comment]
+            const updatedTravels = [...this.state.user.travels, resultRegistration.travel]
             const updatedUser = this.state.user;
-            updatedUser.comments = updatedComments;
+            updatedUser.travels = updatedTravels;
     
             this.setState({
                 user: updatedUser,
-                fieldRegisterComment: '',
+                fieldRegisterTravel: '',
                 loadingRegister: false
             })
         }catch(e){
-            message.error('Falha na requisição registerComment');
+            message.error('Falha na requisição registerTravel');
             this.setState({
                 loadingRegister: false
             })
         }        
     }
 
-    deleteTravel = async (deletedComment) => {     
+    deleteTravel = async (deletedTravel) => {     
         try{
-            const responseDelete = await fetch(`${backendURL}/comment/delete/${deletedComment.id}`, {
+            const responseDelete = await fetch(`${backendURL}/travel/delete/${deletedTravel.id}`, {
                 method: "DELETE",
                 headers: {
                     'Authorization' : `Bearer ${this.#authToken}`,
@@ -153,19 +153,19 @@ export default class Home extends Component {
                 }
             })
             if(responseDelete.status !== 200){
-                message.error('Falha na requisição deleteComment');
+                message.error('Falha na requisição deleteTravel');
                 return;
             }            
                  
-            const updatedComments = this.state.user.comments.filter((comment) => comment.id !== deletedComment.id)
+            const updatedTravels = this.state.user.travels.filter((travel) => travel.id !== deletedTravel.id)
             const updatedUser = this.state.user;
-            updatedUser.comments = updatedComments;
+            updatedUser.travels = updatedTravels;
             
             this.setState({
                 user: updatedUser,
             })
         }catch(e){
-            message.error('Falha na requisição deleteComment');
+            message.error('Falha na requisição deleteTravel');
         }        
     }
 
@@ -182,7 +182,7 @@ export default class Home extends Component {
 
         const logoutButton = (
             <div className="logoutButton" style={{position: 'absolute', top: '5%', right: '5%', width: 100, height: 50}}>
-                <Button className="buttonRegisterComment"
+                <Button className="buttonRegisterTravel"
                     style={{position: 'absolute', top: '10%', left: '5%'}}
                     loading={this.state.loadingRegister}
                     onClick={() =>  this.setState({user: undefined})}
@@ -302,7 +302,7 @@ export default class Home extends Component {
                             </div>  
                             <div style={{height: 80, float: 'right', width: '10%'}}>                            
                                 <CloseCircleOutlined style={{fontSize: 40, cursor: 'pointer'}} twoToneColor="#947119"
-                                    onClick={() => this.deleteComment(travel)}
+                                    onClick={() => this.deleteTravel(travel)}
                                 />
                             </div>                             
                         </div>                                            
