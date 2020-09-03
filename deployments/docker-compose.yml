@@ -1,0 +1,44 @@
+version: '3'
+services:
+    front-end:        
+        image: blds/front-end:v1.0
+        build:
+            context: ../front-end/blds
+            dockerfile: Dockerfile
+        depends_on:                                                             
+            - back-end
+        environment:
+            - REACT_APP_BACK_END_HOST=localhost
+            - REACT_APP_BACK_END_PORT=8080
+        restart: always
+        ports:
+            - 3000:3000 
+        stdin_open: true
+    back-end:        
+        image: blds/back-end:v1.0                                   
+        build:
+            context: ../back-end
+            dockerfile: Dockerfile        
+        depends_on:                                                             
+            - mysql-database                                       
+        environment:
+            - JWT_SECRET=bldstst
+            - DB_USER=root
+            - DB_PASS=password
+            - DB_NAME=blds
+            - DB_HOST=mysql-database
+        restart: always   
+        ports:
+            - 8080:8080                    
+    mysql-database:                                                             
+        image: mysql:5.7
+        volumes:
+            - ../mysql-storage:/var/lib/mysql                                 
+        environment:
+            - MYSQL_USER=root
+            - MYSQL_PASSWORD=password
+            - MYSQL_ROOT_PASSWORD=password
+            - MYSQL_DATABASE=blds                            
+        restart: always
+        expose:
+            - '3306'                                                        
