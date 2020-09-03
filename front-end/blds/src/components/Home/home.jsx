@@ -39,40 +39,12 @@ export default class Home extends Component {
 
         this.state = {
 
-            //user: undefined,                                    
-            user: {
-                travels: [
-                    {
-                        id: 1,
-                        peopleNumber: '1',
-                        dateFrom: 'undefined',
-                        dateTo: 'undefined',
-                        origin: 'undefined',
-                        destination: 'undefined',
-                    },
-                    {
-                        id: 2,
-                        peopleNumber: '2',
-                        dateFrom: 'undefined',
-                        dateTo: 'undefined',
-                        origin: 'undefined',
-                        destination: 'undefined',
-                    },
-                    {
-                        id: 3,
-                        peopleNumber: '3',
-                        dateFrom: 'undefined',
-                        dateTo: 'undefined',
-                        origin: 'undefined',
-                        destination: 'undefined',
-                    }
-                ]
-            },
+            user: undefined,                                    
             
-            nameForm: undefined,
-            phoneForm: undefined,
+            //nameForm: undefined,
+            //phoneForm: undefined,
             peopleNumberForm: undefined,
-            dateRangeForm: undefined,
+            dateRangeForm: [],
             originForm: undefined,
             destinationForm: undefined,
 
@@ -81,7 +53,7 @@ export default class Home extends Component {
 
     }
 
-    getUser = async (userId) => {  console.log(this.#authToken)
+    getUser = async (userId) => {
         const responseUser = await fetch(`${backendURL}/user/get/${userId}`, {
             method: "GET",
             headers: {
@@ -90,7 +62,7 @@ export default class Home extends Component {
             }
         })
         if(responseUser.status !== 200){
-            message.error('Falha na requisição responseUser');
+            message.error('Failed request: responseUser');
             return;
         }
         const responseJson = await responseUser.json()
@@ -98,9 +70,18 @@ export default class Home extends Component {
         this.setState({
             user: responseJson.user,
         })
+        message.success('Logged in successfully')
     }
    
-    registerTravel = async () => {     
+    registerTravel = async () => {        
+        const[dateFrom, dateTo] = this.state.dateRangeForm;
+        console.log(dateFrom)
+        console.log(dateTo)
+        console.log(this.state.dateRangeForm)
+        if(!(this.state.peopleNumberForm && dateFrom?.length && dateTo?.length && this.state.originForm?.length && this.state.destinationForm?.length)){
+            message.error('Complete the form')
+            return;
+        }
         this.setState({
             loadingRegister: true
         })   
@@ -113,11 +94,15 @@ export default class Home extends Component {
                 },
                 body: JSON.stringify({
                     userId: this.state.user.id,  
-                    text: this.state.fieldRegisterTravel
+                    peopleNumber: this.state.peopleNumberForm,
+                    origin: this.state.originForm,
+                    destination: this.state.destinationForm,
+                    dateFrom,
+                    dateTo
                 }),
             })
             if(responseRegistration.status !== 200){
-                message.error('Falha na requisição registerTravel');
+                message.error('Failed request: registerTravel');
                 this.setState({
                     loadingRegister: false
                 })
@@ -135,8 +120,9 @@ export default class Home extends Component {
                 fieldRegisterTravel: '',
                 loadingRegister: false
             })
+            message.success('Registration successful')
         }catch(e){
-            message.error('Falha na requisição registerTravel');
+            message.error('Failed request: registerTravel');
             this.setState({
                 loadingRegister: false
             })
@@ -153,7 +139,7 @@ export default class Home extends Component {
                 }
             })
             if(responseDelete.status !== 200){
-                message.error('Falha na requisição deleteTravel');
+                message.error('Failed request: deleteTravel');
                 return;
             }            
                  
@@ -164,8 +150,9 @@ export default class Home extends Component {
             this.setState({
                 user: updatedUser,
             })
+            message.success('Remotion successful')
         }catch(e){
-            message.error('Falha na requisição deleteTravel');
+            message.error('Failed request: deleteTravel');
         }        
     }
 
@@ -218,8 +205,8 @@ export default class Home extends Component {
         )
 
         const footer = (
-            <div style={{position: 'absolute', bottom: 0, left: 0, width: '100%', height: '10%', backgroundColor: '#06f', overflow: 'hidden'}}>                              
-                <div  style={{position: 'absolute', top: '60%', left: '40%'}}>
+            <div style={{position: 'absolute', bottom: 0, left: 0, width: '100%', height: 80, backgroundColor: '#06f', overflow: 'hidden'}}>                              
+                <div  style={{position: 'absolute', top: '0%', left: '40%'}}>
                     <span style={{fontFamily: 'Englebert', fontSize: 35}}>
                         Contact us
                     </span>
@@ -229,15 +216,15 @@ export default class Home extends Component {
 
         const travelForm = (            
             <div className="formBody" style={{position: 'absolute', top: 470, left: '5%', minWidth: 200, width: '32%', height: 400, }}>
+                <span style={{fontSize: 25, marginBottom: 30}}>{`Welcome ${this.state.user?.name}`}</span><br/>
                 <span style={{fontSize: 25, marginBottom: 30}}>Register a new travel!</span>
-                <Input size="large" placeholder="Name" prefix={<IdcardOutlined />}                    
-                    onChange={(value) => this.setState({ nameForm: value.target.value })}
-                />
                 <div style={{width: '100%', display: 'block'}}>
                     <Input 
+                        disabled={true}
+                        defaultValue={this.state.user?.phone}
                         style={{width: '49%', marginRight: '2%'}}
                         size="large" placeholder="Phone" prefix={<PhoneOutlined />}                        
-                        onChange={(value) => this.setState({ phoneForm: value.target.value })}
+                        //onChange={(value) => this.setState({ phoneForm: value.target.value })}
                     />
                     <InputNumber
                         style={{width: '49%'}}
@@ -289,13 +276,13 @@ export default class Home extends Component {
                     dataSource={this.state.user?.travels || []}
                     renderItem={travel => (
                     <List.Item>
-                        <div style={{width: '100%'}}>                            
+                        <div style={{width: '100%', padding: 5, borderStyle: 'dotted', borderWidth: 1}}>                            
                             <div style={{height: 80, float: 'left', width: '85%', display: 'block'}}>
                                 <div style={{float: 'left', width: '35%'}}>
                                     <span>{`${travel.peopleNumber} People`}</span><br/>
-                                    <span>{`${travel.dateFrom}`}</span><br/>
+                                    <span>{`${travel.dateFrom.slice(0,10)}`}</span><br/>
                                     <span>{`-`}</span><br/>
-                                    <span>{`${travel.dateTo}`}</span>
+                                    <span>{`${travel.dateTo.slice(0,10)}`}</span>
                                 </div>                       
                                 <span>{`Origin : ${travel.origin}`}</span><br/>
                                 <span>{`Destination : ${travel.destination}`}</span>
@@ -332,7 +319,7 @@ export default class Home extends Component {
 
         return (
             <div id="homePage" style={{}}>               
-                <div style={{position: 'fixed', overflowY: 'hidden', left: 0, top: 0, zIndex: -1, width: '100%',}}>                    
+                <div style={{position: 'fixed', overflowY: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', left: 0, top: 0, zIndex: -1, width: '100%',}}>                    
                     <AliceCarousel 
                         autoPlay
                         autoPlayInterval="5000"      
@@ -346,14 +333,14 @@ export default class Home extends Component {
                         {
                             this.#imgList.map((imgUrl) => {
                                 return (
-                                    <img src={imgUrl} style={{width: '100%'}}className="sliderimg"/>
+                                    <img src={imgUrl} style={{flexShrink: 0, minWidth: '100%', minHeight: '100%', backgroundRepeat: 'no-repeat'}} className="sliderimg"/>
                                 )
                             })
                         }                                        
                     </AliceCarousel>   
                 </div>                             
                 {
-                    homeView//this.state.user ? homeView : loginView
+                    this.state.user ? homeView : loginView
                 }                
             </div>
         )

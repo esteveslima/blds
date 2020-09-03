@@ -4,6 +4,8 @@ import { UserOutlined } from '@ant-design/icons';
 import './login.css'
 import Register from '../Register/register'
 import Cookies from 'js-cookie';
+import travela_logo from '../../assets/images/blds_travela_logo.png'
+
 const backendURL = `http://${process.env.REACT_APP_BACK_END_HOST}:${process.env.REACT_APP_BACK_END_PORT}${process.env.REACT_APP_BACK_END_ROUTE}`
 
 export default class Login extends Component {
@@ -63,6 +65,10 @@ export default class Login extends Component {
 
     render() {
 
+        const logo = (
+            <img src={travela_logo} style={{position: 'absolute', top: '5%', left: '5%', width: '25%', height: 'auto'}}/>
+        );
+
         const registerView = (
              <Register visible={this.state.registerVisible} selfClose={this.registrationSelfClose.bind(this)}/>
         )
@@ -96,7 +102,7 @@ export default class Login extends Component {
                     <Input size="large" placeholder="Email" prefix={<UserOutlined />}
                         onChange={(value) => this.setState({ email: value.target.value })}
                     />
-                    <Input.Password size="large" placeholder="Senha"
+                    <Input.Password size="large" placeholder="Password"
                         onChange={(value) => this.setState({ password: value.target.value })}
                     />
                 </div>
@@ -105,6 +111,7 @@ export default class Login extends Component {
 
         return (
             <div id="modalLogin">
+                {logo}
                 {loginModal}
                 {registerView}
             </div>

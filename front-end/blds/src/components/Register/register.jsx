@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import { Modal, Button, Input, message } from 'antd';
-import { UserOutlined } from '@ant-design/icons';
+import { UserOutlined, PhoneOutlined } from '@ant-design/icons';
 import './register.css'
 
 const backendURL = `http://${process.env.REACT_APP_BACK_END_HOST}:${process.env.REACT_APP_BACK_END_PORT}${process.env.REACT_APP_BACK_END_ROUTE}`
@@ -12,6 +12,7 @@ export default class Register extends Component {
 
         this.state = {
             name: undefined,
+            phone: undefined,
             email: undefined,
             password: undefined,
 
@@ -29,10 +30,15 @@ export default class Register extends Component {
             message.error('Complete the form')
             return;
         }
+        if(!/^\(?[1-9]{2}\)? ?(?:[2-8]|9[1-9])[0-9]{3}\-?[0-9]{4}$/gi.test(this.state.phone)){
+            message.error('Invalid phone, must be at format (00) 00000-0000')
+            return
+        }
         if (!/(?=^.{8,128}$)(?=.*\d)(?=.*[!@#$%^&*]+)(?![.\n])(?=.*[A-Z])(?=.*[a-z]).*$/.test(this.state.password)) {
             message.error('Weak password, must contain at least: 8 characters, one uppercase and lowercase, one number and one special character')
             return
         }
+        
 
         this.setState({ loading: true })     
         
@@ -44,6 +50,7 @@ export default class Register extends Component {
                 },
                 body: JSON.stringify({
                     name: this.state.name,
+                    phone: this.state.phone,
                     email: this.state.email,
                     password: this.state.password
                 }),
@@ -77,6 +84,7 @@ export default class Register extends Component {
                 onCancel={() => {
                   this.setState({
                     name: undefined,
+                    phone: undefined,
                     email: undefined,
                     password: undefined,
 
@@ -100,6 +108,10 @@ export default class Register extends Component {
                     <Input size="large" placeholder="Name" prefix={<UserOutlined />}
                         value={this.state.name}
                         onChange={(value) => this.setState({ name: value.target.value })}
+                    />
+                    <Input 
+                        size="large" placeholder="Phone" prefix={<PhoneOutlined />}                        
+                        onChange={(value) => this.setState({ phone: value.target.value })}
                     />
                     <Input size="large" placeholder="Email" prefix={<UserOutlined />}
                         value={this.state.email}
