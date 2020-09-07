@@ -1,6 +1,6 @@
 import React, { Component } from 'react'
 import { Modal, Button, Input, message } from 'antd';
-import { UserOutlined, PhoneOutlined } from '@ant-design/icons';
+import { UserOutlined, PhoneOutlined, MailOutlined } from '@ant-design/icons';
 import './register.css'
 
 const backendURL = `http://${process.env.REACT_APP_BACK_END_HOST}:${process.env.REACT_APP_BACK_END_PORT}${process.env.REACT_APP_BACK_END_ROUTE}`
@@ -113,7 +113,7 @@ export default class Register extends Component {
                         size="large" placeholder="Phone" prefix={<PhoneOutlined />}                        
                         onChange={(value) => this.setState({ phone: value.target.value })}
                     />
-                    <Input size="large" placeholder="Email" prefix={<UserOutlined />}
+                    <Input size="large" placeholder="Email" prefix={<MailOutlined />}
                         value={this.state.email}
                         onChange={(value) => this.setState({ email: value.target.value })}
                     />

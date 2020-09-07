@@ -1,6 +1,6 @@
 import Login from '../Login/login'
 import Cookies from 'js-cookie';
-import travela_logo from '../../assets/images/blds_travela_logo.png'
+import travela_logo from '../../assets/logo/blds_travela_logo.png'
 import AliceCarousel from 'react-alice-carousel';
 import "react-alice-carousel/lib/alice-carousel.css";
 import { Input, Button, List, message, Modal, DatePicker, InputNumber} from 'antd';
@@ -8,36 +8,26 @@ import moment from 'moment';
 import 'antd/dist/antd.css';
 import './home.css'
 import jwt from 'jsonwebtoken';
-import { PhoneOutlined, HomeOutlined, CompassOutlined, CloseCircleOutlined, IdcardOutlined } from '@ant-design/icons';
+import { PhoneOutlined, HomeOutlined, CompassOutlined, CloseCircleOutlined, IdcardOutlined, MailTwoTone, KeyOutlined } from '@ant-design/icons';
 import React, { Component } from 'react'
 
 const { RangePicker } = DatePicker;
 
-
-const { TextArea } = Input;
 const backendURL = `http://${process.env.REACT_APP_BACK_END_HOST}:${process.env.REACT_APP_BACK_END_PORT}${process.env.REACT_APP_BACK_END_ROUTE}`
 
 export default class Home extends Component {
 
-    #authToken = undefined;
-    #imgList = [
-        'https://www.visitmammoth.com/sites/default/files/images/trip_ideas/hero_images/hiking-mammoth-mountain.jpg',
-        'https://sassytownhouseliving.com/wp-content/uploads/2019/10/Mountain-Hiking-As-A-Couple-5-Tips-You-Need-To-Know-7-1024x772.jpg',
-        'https://www.colorado.com/sites/default/files/namkcaps-02231.jpg',
-        'https://cdn2.wanderlust.co.uk/media/1060/lists-europes-8-best-day-hikes.jpg?anchor=center&mode=crop&width=1200&height=0&rnd=131484726710000000',
-        'https://images.vailresorts.com/image/upload/c_scale,dpr_3.0,f_auto,q_auto,w_500/v1/Vail/Products/Brochure/Explore%20the%20Resort/Activities%20and%20Events/Summer%20Activities/Hiking/Vail-HikingAndBackpacking-4.jpg',        
-        'https://www.backpacker.com/.image/t_share/MTUyODM1NzcyODg4Nzg2NDcw/bp0318feat_buildit_msttandem95757786_gn.jpg',
-        'https://miro.medium.com/max/8064/1*1b3yt0vPJ0uELSn7_iUDuw.jpeg',
-        'https://cdn.cnn.com/cnnnext/dam/assets/190304143013-best-hiking-trails---bhutan-blue-poppy.jpg',
-        'https://northernvirginiamag.com/wp-content/uploads/2020/04/old-rag-hike-adobe-stock.jpg',
-        'https://www.chrisistace.com/wp-content/uploads/2019/07/Pogo-Mountain_Hike-Vancouver-Island_Chris-Istace_feature-image.jpg',
-        'https://assets.investsuite.com/updates/about-mifid/about-mifid-img-1.jpeg',
-    ]
+    #authToken = undefined;    
+    #imgList = [];
+    #originTimeOut = undefined;
+    #destinationTimeOut = undefined;
 
     constructor(props) {
         super(props)                
 
         this.state = {
+            apiKey: undefined,
+            inputApiKey: undefined,
 
             user: undefined,                                    
             
@@ -48,9 +38,23 @@ export default class Home extends Component {
             originForm: undefined,
             destinationForm: undefined,
 
-            loadingRegisterForm: false,
+            loadingRegister: false,
+
+            mapsQuery: undefined,
+            mapsOpacity: 0.3,
+
+            hoveredTravel: undefined,            
         }
 
+    }
+
+    componentWillMount = () => {
+        // Importing all images from folder
+        var req = require.context("../../assets/images", false, /.*\.(jpeg|jpg|webp)$/);
+        const images = {};
+        req.keys().map((item, index) => { 
+            this.#imgList.push(req(item))
+        });
     }
 
     getUser = async (userId) => {
@@ -168,9 +172,8 @@ export default class Home extends Component {
         )        
 
         const logoutButton = (
-            <div className="logoutButton" style={{position: 'absolute', top: '5%', right: '5%', width: 100, height: 50}}>
-                <Button className="buttonRegisterTravel"
-                    style={{position: 'absolute', top: '10%', left: '5%'}}
+            <div className="logoutButton" style={{width: 100, height: 50}}>
+                <Button className="buttonRegisterTravel"                    
                     loading={this.state.loadingRegister}
                     onClick={() =>  this.setState({user: undefined})}
                 >
@@ -179,25 +182,104 @@ export default class Home extends Component {
             </div>
         )
 
+        const buttonMapsApi = (
+            <div className="credentialsButton" style={{width: 300, height: 50}}>
+                <Button className="buttonCredentials"                    
+                    loading={this.state.loadingRegister}
+                    onClick={() =>  this.setState({apiCredentialsModalVisible: true})}
+                >
+                    Problems to visualize the map?
+                </Button>
+            </div>
+        )
+
+        const apiCredentialsModal = (
+            <Modal className="modalApi"
+                title="Change Google Maps Credentials"
+                width={450}
+                style={{ top: '1%' }}
+                visible={this.state.apiCredentialsModalVisible}
+                closable={false}
+                footer={[
+                    <div className="modalApiFooter" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <Button className="modalLoginButtonCancel"                            
+                            onClick={() => this.setState({ apiCredentialsModalVisible: false })}
+                        >
+                            Cancel
+                        </Button>
+                        <Button className="modalApiButtonUpdate" type="primary"                                                      
+                            onClick={() => {
+                                if(!(this.state.inputApiKey?.length)){
+                                    message.error('Preencha o formulario')
+                                    return;
+                                }
+                                this.setState({                                    
+                                    apiKey: this.state.inputApiKey
+                                }, () => {
+                                    this.setState({ apiCredentialsModalVisible: false })
+                                    message.success('Credenciais atualizadas com sucesso')
+                                })
+                            }}
+                        >
+                            Update Credentials
+                        </Button>
+                    </div>
+                ]}
+            >
+                <div className="modalApiBody">
+                    <div style={{marginBottom: 10}}>
+                        <span>Change Google Maps API Key:</span>
+                        <a target="_blank" rel="noopener noreferrer" href="https://developers.google.com/maps/documentation/embed/get-api-key?authuser=1">Maps Embed API</a>
+                    </div>                    
+                    <Input.Password size="large" placeholder="Key" prefix={<KeyOutlined />}
+                        onChange={(value) => this.setState({ inputApiKey: value.target.value })}
+                    />
+                </div>
+            </Modal>
+        )
+
+        const maps = (
+            <div style={{width: '100%', height: '100%'}}>
+                <iframe
+                        style={{float: 'right', opacity: this.state.mapsOpacity}}
+                        onMouseEnter={() => {
+                            this.setState({ mapsOpacity: 1})                            
+                        }}
+                        onMouseOut={() => {
+                            this.setState({ mapsOpacity: 0.3})
+                        }}
+                        width="90%"
+                        height="90%"
+                        frameborder="0"
+                        src={`https://www.google.com/maps/embed/v1/place?key=${this.state.apiKey || process.env.REACT_APP_GOOGLE_MAPS_API_KEY}&q=${this.state.mapsQuery}&language=${'en'}`}
+                        allowfullscreen
+                />                
+            </div>                    
+        )
+
         const header = (
             <div style={{position: 'relative', top: 0, left: 0, width: '100%', height: 400, overflow: 'hidden'}}>
-                {logoutButton}
+                <div style={{position: 'absolute', top: '5%', right: '5%', display: 'flex'}}>
+                    {buttonMapsApi}
+                    {logoutButton}                    
+                </div>                
+                {apiCredentialsModal}
                 <img src={travela_logo} style={{position: 'absolute', top: '5%', left: '5%', width: '25%', height: 'auto'}}/>                
-                <div style={{position: 'relative', top: '35%', left: '0%'}}>
-                    <span style={{fontFamily: 'Englebert', fontSize: 35}}>
+                <div style={{position: 'relative', top: '45%', left: '0%'}}>
+                    <span style={{fontFamily: 'Englebert', fontSize: 35, fontWeight: 'bolder', color: '#273757'}}>
                         The application for your vacation
                     </span>
                 </div>
-                <div style={{position: 'relative', top: '45%', left: '10%', width:'80%'}}>
-                    <span style={{fontFamily: 'Englebert', fontSize: 25}}>
+                <div style={{position: 'relative', top: '55%', left: '10%', width:'80%'}}>
+                    <span style={{fontFamily: 'Englebert', fontSize: 25, fontWeight: 'bolder'}}>
                         Because we love the most human part of our lives: travelling!                         
                     </span>
                     <br/>
-                    <span style={{fontFamily: 'Englebert', fontSize: 25}}>
+                    <span style={{fontFamily: 'Englebert', fontSize: 25, fontWeight: 'bolder'}}>
                         We are aiming to bring the perfect experience to your vacation research.                     
                     </span>
                     <br/>
-                    <span style={{fontFamily: 'Englebert', fontSize: 25}}>                        
+                    <span style={{fontFamily: 'Englebert', fontSize: 25, fontWeight: 'bolder'}}>                        
                         It's our mission and desire to provide for you a safe platform to register your future travels.                        
                     </span>
                 </div>                
@@ -205,22 +287,40 @@ export default class Home extends Component {
         )
 
         const footer = (
-            <div style={{position: 'absolute', bottom: 0, left: 0, width: '100%', height: 80, backgroundColor: '#06f', overflow: 'hidden'}}>                              
-                <div  style={{position: 'absolute', top: '0%', left: '40%'}}>
-                    <span style={{fontFamily: 'Englebert', fontSize: 35}}>
-                        Contact us
+            <div style={{marginTop: 100, width: '100%', height: 400, backgroundImage: 'linear-gradient(rgba(255,255,255,0), rgba(17, 110, 250, 1))'}}>                              
+                <div style={{position: 'relative', top: '50%',}}>
+                    <div style={{display: 'block'}}>
+                        <img src={travela_logo} style={{width: '15%', height: 'auto'}}/>                       
+                    </div>  
+                    <span style={{fontFamily: 'Englebert', fontSize: 20, fontWidth: 'bold', color: '#fff'}}>
+                        Contact us:
                     </span>
+                    <MailTwoTone twoToneColor='#fff' style={{marginLeft: 15, fontSize: 18}} />     
+                    <a 
+                        style={{marginLeft: 5, fontSize: 20, color: '#fff'}}
+                        href="mailto:esteves_m_lima@hotmail.com?subject=Nice%20Job"
+                    >
+                        esteves_m_lima@hotmail.com
+                    </a>
+                          
                 </div>
             </div>
         )
 
         const travelForm = (            
-            <div className="formBody" style={{position: 'absolute', top: 470, left: '5%', minWidth: 200, width: '32%', height: 400, }}>
-                <span style={{fontSize: 25, marginBottom: 30}}>{`Welcome ${this.state.user?.name}`}</span><br/>
-                <span style={{fontSize: 25, marginBottom: 30}}>Register a new travel!</span>
+            <div className="formBody" style={{height: 400, }}>
+                <span style={{fontSize: 35, marginBottom: 30, fontWeight: 'bolder', color: '#273757'}}>{`Welcome ${this.state.user?.name || ''}`}</span><br/>
+                <span style={{fontSize: 25, marginBottom: 30, fontWeight: 'bolder', color: '#273757'}}>Register a new travel!</span>
+                <Input 
+                        disabled={this.state.user}
+                        defaultValue={this.state.user?.name}
+                        style={{width: '100%'}}
+                        size="large" placeholder="Name" prefix={<IdcardOutlined />}                        
+                        //onChange={(value) => this.setState({ phoneForm: value.target.value })}
+                />
                 <div style={{width: '100%', display: 'block'}}>
                     <Input 
-                        disabled={true}
+                        disabled={this.state.user}
                         defaultValue={this.state.user?.phone}
                         style={{width: '49%', marginRight: '2%'}}
                         size="large" placeholder="Phone" prefix={<PhoneOutlined />}                        
@@ -249,15 +349,47 @@ export default class Home extends Component {
                 <div style={{width: '100%', display: 'block'}}>
                     <Input 
                         style={{width: '49%', marginRight: '2%'}}
-                        size="large" placeholder="Origin" prefix={<HomeOutlined />}                        
-                        onChange={(value) => this.setState({ originForm: value.target.value })}
+                        size="large" placeholder="Origin" prefix={<HomeOutlined />} 
+                        onFocus={() => {
+                            this.setState({ mapsOpacity: 1 })
+                        }}          
+                        onBlur={() => {
+                            this.setState({ mapsOpacity: 0.3 })
+                        }}             
+                        onChange={(value) => {                            
+                            this.setState({
+                                originForm: value.target.value,
+                            }, () => {
+                                this.#originTimeOut && clearTimeout(this.#originTimeOut)
+                                this.#originTimeOut = setTimeout(() => {
+                                    message.info(`Looking for ${this.state.originForm} in maps`)
+                                    this.setState({ mapsQuery: this.state.originForm, mapsOpacity: 1 })
+                                }, 1500)
+                            })                                                        
+                        }}
                     />
                     <Input
                         style={{width: '49%'}}
-                        size="large" placeholder="Destination" prefix={<CompassOutlined />}                        
-                        onChange={(value) => this.setState({ destinationForm: value.target.value })}
+                        size="large" placeholder="Destination" prefix={<CompassOutlined />}   
+                        onFocus={() => {
+                            this.setState({ mapsOpacity: 1 })
+                        }}          
+                        onBlur={() => {
+                            this.setState({ mapsOpacity: 0.3 })
+                        }}                     
+                        onChange={(value) => {                            
+                            this.setState({
+                                destinationForm: value.target.value,
+                            }, () => {
+                                this.#destinationTimeOut && clearTimeout(this.#destinationTimeOut)
+                                this.#destinationTimeOut = setTimeout(() => {
+                                    message.info(`Looking for ${this.state.destinationForm} in maps`)
+                                    this.setState({ mapsQuery: this.state.destinationForm, mapsOpacity: 1 })
+                                }, 1500)
+                            })                                                        
+                        }}
                     />
-                </div>
+                </div>                
                 <Button className="buttonRegister" type="primary"               
                     loading={this.state.loading}
                     onClick={() => this.registerTravel()}
@@ -268,22 +400,36 @@ export default class Home extends Component {
         )
 
         const travelsList = (            
-            <div className="travelsList" style={{position: 'absolute', top: 470, right: '5%', minWidth: 300, width: '48%', height: 400, overflowX: 'hidden', overflowY: 'scroll', }}>
-                <span style={{fontSize: 25}}>Registered Travels</span>
+            <div className="travelsList" style={{height: 400, overflowX: 'hidden', overflowY: 'scroll', }}>
+                <span style={{fontSize: 35, fontWeight: 'bolder', color: '#273757'}}>Registered Travels</span>
                 <List
-                    itemLayout="horizontal"
-                    style={{position: 'absolute', top: '20%', right: '5%', width: '90%'}}
+                    itemLayout="horizontal"                    
                     dataSource={this.state.user?.travels || []}
                     renderItem={travel => (
-                    <List.Item>
-                        <div style={{width: '100%', padding: 5, borderStyle: 'dotted', borderWidth: 1}}>                            
-                            <div style={{height: 80, float: 'left', width: '85%', display: 'block'}}>
-                                <div style={{float: 'left', width: '35%'}}>
-                                    <span>{`${travel.peopleNumber} People`}</span><br/>
+                    <List.Item
+                        onClick={() => {
+                            message.info(`Looking for ${travel.destination} in maps`)
+                            this.setState({ mapsQuery: travel.destination, mapsOpacity: 1 })}
+                        }
+                        onMouseOver={() => this.setState({ hoveredTravel: travel.id}, () => console.log(travel.id))}
+                        onMouseOut={() => this.setState({ hoveredTravel: undefined})}
+                    >
+                        <div 
+                            style={{
+                                width: '100%', padding: 5, 
+                                backgroundColor: (travel.id === this.state.hoveredTravel) ? 'rgba(0, 102, 255, 1)' : null, 
+                                color: (travel.id === this.state.hoveredTravel) ? '#fff' : "#000", 
+                                borderBottomStyle: 'solid', borderBottomWidth: 1, borderBottomColor: '#dedede',
+                                borderTopStyle: 'solid', borderTopWidth: 1, borderTopColor: '#dedede'
+                            }}                            
+                        >                            
+                            <div style={{height: 80, float: 'left', width: '85%', display: 'block', fontWeight: 'bold'}}>
+                                <div style={{float: 'left', width: '35%'}}>                                    
                                     <span>{`${travel.dateFrom.slice(0,10)}`}</span><br/>
                                     <span>{`-`}</span><br/>
                                     <span>{`${travel.dateTo.slice(0,10)}`}</span>
                                 </div>                       
+                                <span>{`${travel.peopleNumber} People`}</span><br/>
                                 <span>{`Origin : ${travel.origin}`}</span><br/>
                                 <span>{`Destination : ${travel.destination}`}</span>
                             </div>  
@@ -297,18 +443,28 @@ export default class Home extends Component {
                     )}
                 />
             </div>
-        )
-
+        )        
 
         const body = (
-            <div style={{display: 'flex'}}>
-                {travelForm}
-                {this.state.user && travelsList}
-            </div>            
+            <div style={{width: '100%', display: 'flex', marginTop: 100, paddingLeft: '3%', paddingRight: '3%',}}>
+                <div style={{width: '40%', minWidth: 300, display: 'block'}}>
+                    {travelForm}
+                    {travelsList}                
+                </div>
+                <div style={{width: '60%', minWidth: 300,}}>
+                    {this.state.user && maps}                                                      
+                </div> 
+            </div>
+                       
         );
 
         const homeView = (
-            <div className="homeView" style={{position: 'absolute', top: 0, left: '20%', overflowX: 'hidden', overflowY: 'hidden', minWidth: 600, width: '60%', height: '150%', backgroundImage: 'radial-gradient(rgba(255,255,255,1) 10%, rgba(255,255,255,0.7) 90%)'}}>                
+            <div className="homeView" 
+                style={{
+                    margin: '0 auto', overflowX: 'hidden', overflowY: 'hidden', minWidth: 600, width: '70%', minHeight: 1500,
+                    backgroundImage: 'radial-gradient(rgba(255,255,255,0.95) 45%, rgba(255,255,255,0.3) 80%)'
+                }}
+            >                
                 {header}
                 {body}
                 {footer}
@@ -319,10 +475,16 @@ export default class Home extends Component {
 
         return (
             <div id="homePage" style={{}}>               
-                <div style={{position: 'fixed', overflowY: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', left: 0, top: 0, zIndex: -1, width: '100%',}}>                    
+                
+                <div style={{
+                    position: 'fixed', height: '100%', width: '100%', 
+                    overflowY: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', 
+                    left: 0, top: 0, zIndex: -1,
+                    objectFit: 'cover',
+                }}>
                     <AliceCarousel 
                         autoPlay
-                        autoPlayInterval="5000"      
+                        autoPlayInterval="10000"      
                         fadeOutAnimation={true}
                         swipeDisabled={true}
                         buttonsDisabled={true}
@@ -332,8 +494,13 @@ export default class Home extends Component {
                     >
                         {
                             this.#imgList.map((imgUrl) => {
-                                return (
-                                    <img src={imgUrl} style={{flexShrink: 0, minWidth: '100%', minHeight: '100%', backgroundRepeat: 'no-repeat'}} className="sliderimg"/>
+                                return (                                
+                                    <img src={imgUrl} className="sliderimg"
+                                        style={{    
+                                                                                    
+                                            flexShrink: 0, minWidth: '100%', minHeight: '100%', margin: 'auto',
+                                        }} 
+                                    />                                  
                                 )
                             })
                         }                                        

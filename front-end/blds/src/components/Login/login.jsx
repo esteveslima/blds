@@ -4,7 +4,7 @@ import { UserOutlined } from '@ant-design/icons';
 import './login.css'
 import Register from '../Register/register'
 import Cookies from 'js-cookie';
-import travela_logo from '../../assets/images/blds_travela_logo.png'
+import travela_logo from '../../assets/logo/blds_travela_logo.png'
 
 const backendURL = `http://${process.env.REACT_APP_BACK_END_HOST}:${process.env.REACT_APP_BACK_END_PORT}${process.env.REACT_APP_BACK_END_ROUTE}`
 

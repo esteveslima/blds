@@ -10,12 +10,14 @@ services:
         environment:
             - REACT_APP_BACK_END_HOST=localhost
             - REACT_APP_BACK_END_PORT=8080
+            - REACT_APP_BACK_END_ROUTE=
+            - REACT_APP_GOOGLE_MAPS_API_KEY=AIzaSyCaHRdOGunmKAd-fMtYkVdXmrv4geKEeyQ
         restart: always
         ports:
             - 3000:3000 
         stdin_open: true
     back-end:        
-        image: blds/back-end:v1.0                                   
+        image: blds/back-end:v1.0
         build:
             context: ../back-end
             dockerfile: Dockerfile        
